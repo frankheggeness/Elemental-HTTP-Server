@@ -115,6 +115,17 @@ const server = http.createServer(function(req, res) {
       }
     });
   }
+  // DELETE
+
+  if (req.method === 'DELETE') {
+    let dontDeleteFiles = ['/server.js', '/elementtest.js', '/css', '/.keep'];
+    if (!dontDeleteFiles.includes(req.url)) {
+      fs.unlink(`./public${req.url}`, (err) => {
+        if (err) throw err;
+        return res.end(`${req.url} was deleted  `);
+      });
+    }
+  }
 });
 
 server.listen(8080, () => {
