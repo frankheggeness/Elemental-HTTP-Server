@@ -52,7 +52,8 @@ const server = http.createServer(function(req, res) {
           <p><a href="/">back</a></p>
           </body>
         </html>`;
-        fs.writeFile(`./public/${parsedBody.elementName.toLowerCase()}.html`, pageTemplate, (err, data) => {
+        let elementName = parsedBody.elementName.toLowerCase();
+        fs.writeFile(`./public/${elementName}.html`, pageTemplate, (err, data) => {
           if (err) {
             res.writeHead(500);
             return res.end('{ "success": false }');
@@ -119,3 +120,15 @@ const server = http.createServer(function(req, res) {
 server.listen(8080, () => {
   console.log(`Server is ON`);
 });
+
+// DELETE
+
+// if (req.method === 'DELETE') {
+//   let dontDeleteFiles = ['/server.js', '/elementtest.js', '/css', '/.keep'];
+//   if (!dontDeleteFiles.includes(req.url)) {
+//     fs.unlink(`./public${req.url}`, (err) => {
+//       if (err) throw err;
+//       return res.end(`${req.url} was deleted`);
+//     });
+//   }
+// }
