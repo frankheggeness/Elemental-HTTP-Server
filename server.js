@@ -122,6 +122,9 @@ const server = http.createServer(function(req, res) {
     if (!dontDeleteFiles.includes(req.url)) {
       fs.unlink(`./public${req.url}`, (err) => {
         if (err) throw err;
+        // update index
+        updateIndex();
+        // return response
         return res.end(`${req.url} was deleted  `);
       });
     }
@@ -132,14 +135,56 @@ server.listen(8080, () => {
   console.log(`Server is ON`);
 });
 
-// DELETE
-
-// if (req.method === 'DELETE') {
-//   let dontDeleteFiles = ['/server.js', '/elementtest.js', '/css', '/.keep'];
-//   if (!dontDeleteFiles.includes(req.url)) {
-//     fs.unlink(`./public${req.url}`, (err) => {
-//       if (err) throw err;
-//       return res.end(`${req.url} was deleted`);
-//     });
-//   }
-// }
+function updateIndex() {
+  fs.readdir(`./public`, (err, files) => {
+    if (err) {
+      throw new Error(err);
+    } else {
+      let numberOfElements = 0;
+      let ignoreFiles = ['server.js', 'elementtest.js', 'css', '.keep'];
+      let fileList = '';
+      files.forEach((file) => {
+        if (!ignoreFiles.includes(file)) {
+          numberOfElements++;
+          let fileName = file.slice(0, file.indexOf('.'));
+          // fileName = fileName[0].toUpperCase + fileName.slice(1);
+          fileList += `
+          <li>
+          <a href="${file}">${fileName}</a>
+        </li>`;
+        }
+      });
+      let indexTemplate = `
+      <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Elements</title>
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<h1>The Elements</h1>
+<h2>These are all the known elements.</h2>
+<h3>These are ${numberOfElements}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<title>Document</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body></body>
+</html></h3>
+<ol>
+${fileList}
+</ol>
+</body>
+</html>`;
+      fs.writeFile(`./public/index.html`, indexTemplate, (err, data) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end('{ "success": true }');
+      });
+    }
+  });
+}
