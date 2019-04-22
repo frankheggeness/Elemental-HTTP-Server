@@ -135,7 +135,6 @@ const server = http.createServer(function(req, res) {
                 <p><a href="/">back</a></p>
                 </body>
               </html>`;
-            let elementName = parsedBody.elementName.toLowerCase();
             fs.writeFile(`./public/${req.url}`, pageTemplate, (err, data) => {
               if (err) {
                 res.writeHead(500);
