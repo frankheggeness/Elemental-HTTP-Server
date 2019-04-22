@@ -2,7 +2,13 @@ const http = require('http');
 const fs = require('fs');
 const qs = require('querystring');
 
+const authorizedUsers = {
+  banana: 'peel',
+};
+
 const server = http.createServer(function(req, res) {
+  // GET
+
   if (req.method === 'GET') {
     if (req.url === '/') {
       fs.readFile('./public/index.html', 'utf8', (err, data) => {
@@ -23,19 +29,29 @@ const server = http.createServer(function(req, res) {
     });
   }
 
+  // POST
+
   if (req.method === 'POST' && req.url === '/elements') {
-    let body = '';
+    if (req.headers.authorization) {
+      const encodedString = req.headers.authorization.slice(6);
+      const base64Buffer = new Buffer(encodedString, 'base64');
+      const decodedString = base64Buffer.toString();
+      let username = decodedString.slice(0, decodedString.indexOf(':'));
+      let password = decodedString.slice(decodedString.indexOf(':') + 1);
 
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
+      if (authorizedUsers.hasOwnProperty(username) && authorizedUsers[username] === password) {
+        let body = '';
 
-    req.on('end', (chunk) => {
-      if (chunk) {
-        body += chunk;
-      } else {
-        let parsedBody = qs.parse(body);
-        let pageTemplate = `<!DOCTYPE html>
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+
+        req.on('end', (chunk) => {
+          if (chunk) {
+            body += chunk;
+          } else {
+            let parsedBody = qs.parse(body);
+            let pageTemplate = `<!DOCTYPE html>
         <html lang="en">
           <head>
             <meta charset="UTF-8" />
@@ -52,32 +68,117 @@ const server = http.createServer(function(req, res) {
           <p><a href="/">back</a></p>
           </body>
         </html>`;
-        let elementName = parsedBody.elementName.toLowerCase();
-        fs.writeFile(`./public/${elementName}.html`, pageTemplate, (err, data) => {
-          if (err) {
-            res.writeHead(500);
-            return res.end('{ "success": false }');
-          } else {
-            updateIndex();
+            let elementName = parsedBody.elementName.toLowerCase();
+            fs.writeFile(`./public/${elementName}.html`, pageTemplate, (err, data) => {
+              if (err) {
+                res.writeHead(500);
+                return res.end('{ "success": false }');
+              } else {
+                updateIndex();
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              return res.end('{ "success": true }');
+            });
           }
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end('{ "success": true }');
         });
+      } else {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+        return res.end(`<html><body>Invalid Authentication Credentials</body></html>`);
       }
-    });
+    } else {
+      res.writeHeader(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+      return res.end(`<html><body>Not Authorized</body></html>`);
+    }
+  }
+
+  // PUT
+  if (req.method === 'PUT') {
+    if (req.headers.authorization) {
+      const encodedString = req.headers.authorization.slice(6);
+      const base64Buffer = new Buffer(encodedString, 'base64');
+      const decodedString = base64Buffer.toString();
+      let username = decodedString.slice(0, decodedString.indexOf(':'));
+      let password = decodedString.slice(decodedString.indexOf(':') + 1);
+      if (authorizedUsers.hasOwnProperty(username) && authorizedUsers[username] === password) {
+        let body = '';
+
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+
+        req.on('end', (chunk) => {
+          if (chunk) {
+            body += chunk;
+          } else {
+            let parsedBody = qs.parse(body);
+            let pageTemplate = `<!DOCTYPE html>
+              <html lang="en">
+                <head>
+                  <meta charset="UTF-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+                  <title>Document</title>
+                  <link rel="stylesheet" href="css/styles.css" />
+                </head>
+                <body>
+                <h1>${parsedBody.elementName}</h1>
+                <h2>${parsedBody.elementSymbol}</h2>
+                <h3>${parsedBody.elementAtomicNumber}</h3>
+                <p>${parsedBody.elementDescription}</p>
+                <p><a href="/">back</a></p>
+                </body>
+              </html>`;
+            let elementName = parsedBody.elementName.toLowerCase();
+            fs.writeFile(`./public/${req.url}`, pageTemplate, (err, data) => {
+              if (err) {
+                res.writeHead(500);
+                return res.end('{ "success": false }');
+              } else {
+                updateIndex();
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              return res.end('{ "success": true }');
+            });
+          }
+        });
+      } else {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+        return res.end(`<html><body>Invalid Authentication Credentials</body></html>`);
+      }
+    } else {
+      res.writeHeader(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+      return res.end(`<html><body>Not Authorized</body></html>`);
+    }
   }
   // DELETE
 
   if (req.method === 'DELETE') {
-    let dontDeleteFiles = ['/server.js', '/elementtest.js', '/css', '/.keep'];
-    if (!dontDeleteFiles.includes(req.url)) {
-      fs.unlink(`./public${req.url}`, (err) => {
-        if (err) throw err;
-        // update index
-        updateIndex();
-        // return response
-        return res.end(`${req.url} was deleted  `);
-      });
+    if (req.headers.authorization) {
+      const encodedString = req.headers.authorization.slice(6);
+      const base64Buffer = new Buffer(encodedString, 'base64');
+      const decodedString = base64Buffer.toString();
+      let username = decodedString.slice(0, decodedString.indexOf(':'));
+      let password = decodedString.slice(decodedString.indexOf(':') + 1);
+
+      if (authorizedUsers.hasOwnProperty(username) && authorizedUsers[username] === password) {
+        let dontDeleteFiles = ['/server.js', '/elementtest.js', '/css', '/.keep'];
+
+        if (!dontDeleteFiles.includes(req.url)) {
+          fs.unlink(`./public${req.url}`, (err) => {
+            if (err) throw err;
+            // update index
+            updateIndex();
+            // return response
+            return res.end(`${req.url} was deleted  `);
+          });
+        }
+      } else {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+        return res.end(`<html><body>Invalid Authentication Credentials</body></html>`);
+      }
+    } else {
+      res.writeHeader(401, { 'WWW-Authenticate': 'Basic realm="SecureArea"' });
+      return res.end(`<html><body>Not Authorized</body></html>`);
     }
   }
 });
@@ -125,7 +226,11 @@ function updateIndex() {
 <meta http-equiv="X-UA-Compatible" content="ie=edge" />
 <title>Document</title>
 <link rel="stylesheet" href="css/styles.css" />
-</head>
+</head>    const decodedString = base64Buffer.toString();
+let username = decodedString.slice(0, decodedString.indexOf(':'));
+let password = decodedString.slice(decodedString.indexOf(':'));
+if (authorizedUsers.hasOwnProperty(username) && authorizedUsers[username] === password) {
+  postOrPut();
 <body></body>
 </html></h3>
 <ol>
@@ -133,6 +238,52 @@ ${fileList}
 </ol>
 </body>
 </html>`;
+    }
+  });
+}
+
+// post/put function
+
+function postOrPut() {
+  let body = '';
+
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
+
+  req.on('end', (chunk) => {
+    if (chunk) {
+      body += chunk;
+    } else {
+      let parsedBody = qs.parse(body);
+      let pageTemplate = `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+            <title>Document</title>
+            <link rel="stylesheet" href="css/styles.css" />
+          </head>
+          <body>
+          <h1>${parsedBody.elementName}</h1>
+          <h2>${parsedBody.elementSymbol}</h2>
+          <h3>${parsedBody.elementAtomicNumber}</h3>
+          <p>${parsedBody.elementDescription}</p>
+          <p><a href="/">back</a></p>
+          </body>
+        </html>`;
+      let elementName = parsedBody.elementName.toLowerCase();
+      fs.writeFile(`./public/${elementName}.html`, pageTemplate, (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          return res.end('{ "success": false }');
+        } else {
+          updateIndex();
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end('{ "success": true }');
+      });
     }
   });
 }
