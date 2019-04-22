@@ -101,6 +101,12 @@ const server = http.createServer(function(req, res) {
       let password = decodedString.slice(decodedString.indexOf(':') + 1);
 
       if (authorizedUsers.hasOwnProperty(username) && authorizedUsers[username] === password) {
+        fs.readdir(`./public`, (err, files) => {
+          if (!files.includes(req.url.slice(1))) {
+            res.writeHead(500);
+            return res.end(`{ "error" : "resource ${req.url} does not exist" }`);
+          }
+        });
         let body = '';
 
         req.on('data', (chunk) => {
