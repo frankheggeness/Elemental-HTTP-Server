@@ -67,18 +67,22 @@ request += `\r\n`;
 
 // POST REQUEST
 if (method === 'POST') {
-  let request = `${method} ${URI} HTTP/1.1\r\n`;
+  let nameInput = args[args.indexOf('POST') + 1];
+  let numberInput = args[args.indexOf('POST') + 2];
+  let symbolInput = args[args.indexOf('POST') + 3];
+  let descriptionInput = args[args.indexOf('POST') + 4];
+  let content = `elementName=${nameInput}&elementAtomicNumber=${numberInput}&elementSymbol=${symbolInput}&elementDescription=${descriptionInput}`;
+  let contentLength = content.length;
+
+  request = `${method} ${URI} HTTP/1.1\r\n`;
   request += `host: ${host}\r\n`;
   request += `date: ${new Date().toUTCString()}\r\n`;
   request += `Authorization:Basic ${encodedPass}\r\n`;
   request += `Content-Type: application/x-www-form-urlencoded\r\n`;
-  request += `Content-Length: 89 \r\n`;
+  request += `Content-Length: ${contentLength} \r\n`;
   request += `\r\n`;
-  request += `elementName=securitytesttest&elementAtomicNumber=9&elementSymbol=D&elementDescription=test`;
+  request += `elementName=${nameInput}&elementAtomicNumber=${numberInput}&elementSymbol=${symbolInput}&elementDescription=${descriptionInput}\r\n`;
   console.log(request);
-  // request += `elementAtomicNumber=12\r\n`;
-  // request += `elementSymbol=B\r\n`;
-  // request += `elementDescription=This is a test desciprtion\r\n`;
 }
 
 console.log(method);
@@ -87,7 +91,7 @@ const client = net.createConnection(port, host, () => {
   client.on('connect', () => {
     console.log('connected');
   });
-
+  console.log();
   client.write(request);
 });
 
